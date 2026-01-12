@@ -1,0 +1,36 @@
+---
+const { href } = Astro.props as { href: (p: string) => string };
+---
+<header class="border-b border-slate-200">
+  <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+    <a class="font-semibold tracking-tight" href={href("/")}>Tienda Electrónica SR</a>
+
+    <nav class="hidden gap-5 text-sm md:flex">
+      <a class="hover:underline" href={href("/catalogo")}>Catálogo</a>
+      <a class="hover:underline" href={href("/reparaciones")}>Reparaciones</a>
+      <a class="hover:underline" href={href("/envios-retiros")}>Envíos / Retiros</a>
+      <a class="hover:underline" href={href("/contacto")}>Contacto</a>
+    </nav>
+
+    <a class="relative rounded-md border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50" href={href("/carrito")}>
+      Carrito
+      <span id="cart-count" class="ml-2 inline-flex min-w-6 items-center justify-center rounded-full bg-slate-900 px-2 py-0.5 text-xs text-white">0</span>
+    </a>
+  </div>
+
+  <div class="mx-auto max-w-6xl px-4 pb-4 md:hidden">
+    <div class="flex gap-3 text-sm">
+      <a class="underline" href={href("/catalogo")}>Catálogo</a>
+      <a class="underline" href={href("/reparaciones")}>Reparaciones</a>
+      <a class="underline" href={href("/contacto")}>Contacto</a>
+    </div>
+  </div>
+
+  <script type="module">
+    import { getCartCount } from "../lib/cart";
+    const el = document.getElementById("cart-count");
+    function paint() { if (el) el.textContent = String(getCartCount()); }
+    paint();
+    window.addEventListener("cart:updated", paint);
+  </script>
+</header>

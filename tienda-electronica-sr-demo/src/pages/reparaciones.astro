@@ -1,0 +1,42 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+<BaseLayout title="Reparaciones | Tienda Electrónica SR">
+  <h1 class="text-xl font-semibold">Reparaciones</h1>
+  <p class="mt-2 text-slate-600">Solicitud demo: genera un ticket y confirma el envío.</p>
+
+  <div class="mt-6 grid gap-6 md:grid-cols-2">
+    <section class="rounded-lg border border-slate-200 p-4">
+      <div class="font-semibold">Servicios</div>
+      <ul class="mt-3 list-disc pl-5 text-sm text-slate-700 space-y-1">
+        <li>Diagnóstico</li>
+        <li>Reparación notebook/PC</li>
+        <li>Cambio de pantalla</li>
+        <li>Mantenimiento</li>
+      </ul>
+    </section>
+
+    <section class="rounded-lg border border-slate-200 p-4">
+      <div class="font-semibold">Solicitar reparación</div>
+      <form id="f" class="mt-3 space-y-3">
+        <label class="block text-sm">Nombre<input name="name" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2" required /></label>
+        <label class="block text-sm">Teléfono<input name="phone" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2" required /></label>
+        <label class="block text-sm">Equipo (marca/modelo)<input name="device" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2" required /></label>
+        <label class="block text-sm">Descripción de la falla<textarea name="issue" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2" rows="3" required></textarea></label>
+        <button class="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">Enviar</button>
+      </form>
+      <div id="ok" class="mt-3 text-sm text-slate-700"></div>
+    </section>
+  </div>
+
+  <script type="module">
+    const f = document.getElementById("f");
+    const ok = document.getElementById("ok");
+    f.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const ticket = `REP-${Date.now().toString().slice(-6)}`;
+      ok.textContent = `Solicitud enviada. Ticket: ${ticket}. En breve te contactamos para coordinar.`;
+      f.reset();
+    });
+  </script>
+</BaseLayout>

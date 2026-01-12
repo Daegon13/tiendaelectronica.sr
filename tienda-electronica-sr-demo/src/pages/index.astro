@@ -1,0 +1,47 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ProductCard from "../components/ProductCard.astro";
+import { getAllProducts } from "../lib/products";
+
+const products = getAllProducts().slice(0, 8);
+
+const base = import.meta.env.BASE_URL;
+const href = (p: string) => `${base}${p.replace(/^\//, "")}`;
+---
+<BaseLayout title="Tienda Electrónica SR | Demo" description="Demo e-commerce con carrito y checkout">
+  <section class="rounded-xl border border-slate-200 p-6">
+    <h1 class="text-2xl font-semibold tracking-tight">Electrónica y accesorios</h1>
+    <p class="mt-2 max-w-2xl text-slate-600">
+      Demo navegable con flujo completo: catálogo, producto, carrito, checkout y confirmación.
+    </p>
+    <div class="mt-5 flex flex-wrap gap-3">
+      <a href={href("/catalogo")} class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white">Ver catálogo</a>
+      <a href={href("/reparaciones")} class="rounded-md border border-slate-200 px-4 py-2 text-sm font-medium hover:bg-slate-50">Reparaciones</a>
+    </div>
+
+    <div class="mt-6 grid gap-3 md:grid-cols-3">
+      <div class="rounded-lg bg-slate-50 p-4 text-sm">
+        <div class="font-semibold">Pago online</div>
+        <div class="mt-1 text-slate-600">Flujo demo (mock/sandbox al migrar).</div>
+      </div>
+      <div class="rounded-lg bg-slate-50 p-4 text-sm">
+        <div class="font-semibold">Envíos o retiro</div>
+        <div class="mt-1 text-slate-600">Selección en checkout.</div>
+      </div>
+      <div class="rounded-lg bg-slate-50 p-4 text-sm">
+        <div class="font-semibold">Control de stock</div>
+        <div class="mt-1 text-slate-600">Validación y bloqueo sin stock.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mt-10">
+    <div class="flex items-end justify-between gap-4">
+      <h2 class="text-xl font-semibold">Destacados</h2>
+      <a class="text-sm underline" href={href("/catalogo")}>Ver todo</a>
+    </div>
+    <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {products.map(p => <ProductCard product={p} href={href} />)}
+    </div>
+  </section>
+</BaseLayout>

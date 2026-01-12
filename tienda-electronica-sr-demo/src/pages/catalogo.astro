@@ -1,0 +1,126 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ProductCard from "../components/ProductCard.astro";
+import { getAllProducts, getBrands, getCategories } from "../lib/products";
+
+const products = getAllProducts();
+const categories = getCategories();
+const brands = getBrands();
+
+const base = import.meta.env.BASE_URL;
+const href = (p: string) => `${base}${p.replace(/^\//, "")}`;
+---
+<BaseLayout title="Catálogo | Tienda Electrónica SR">
+  <div class="flex flex-col gap-6 md:flex-row">
+    <aside class="w-full rounded-lg border border-slate-200 p-4 md:w-72">
+      <div class="font-semibold">Filtros</div>
+
+      <label class="mt-4 block text-sm">
+        <span class="text-slate-700">Buscar</span>
+        <input id="q" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2" placeholder="Nombre o SKU" />
+      </label>
+
+      <label class="mt-4 block text-sm">
+        <span class="text-slate-700">Categoría</span>
+        <select id="cat" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2">
+          <option value="">Todas</option>
+          {categories.map(c => <option value={c}>{c}</option>)}
+        </select>
+      </label>
+
+      <label class="mt-4 block text-sm">
+        <span class="text-slate-700">Marca</span>
+        <select id="brand" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2">
+          <option value="">Todas</option>
+          {brands.map(b => <option value={b}>{b}</option>)}
+        </select>
+      </label>
+
+      <label class="mt-4 flex items-center gap-2 text-sm">
+        <input id="inStock" type="checkbox" class="h-4 w-4" />
+        <span class="text-slate-700">Solo con stock</span>
+      </label>
+
+      <button id="reset" class="mt-4 w-full rounded-md border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50">
+        Reset
+      </button>
+    </aside>
+
+    <section class="w-full">
+      <div class="flex items-end justify-between">
+        <h1 class="text-xl font-semibold">Catálogo</h1>
+        <div id="count" class="text-sm text-slate-600"></div>
+      </div>
+
+      <div id="grid" class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {products.map(p => (
+          <div
+            class="product"
+            data-name={`${p.name} ${p.sku}`.toLowerCase()}
+            data-cat={p.category}
+            data-brand={p.brand}
+            data-stock={String(p.stockQty)}
+          >
+            <ProductCard product={p} href={href} />
+          </div>
+        ))}
+      </div>
+
+      <div id="empty" class="mt-6 hidden rounded-lg border border-slate-200 p-6 text-slate-600">
+        No hay productos con esos filtros.
+      </div>
+    </section>
+  </div>
+
+  <script type="module">
+    const q = document.getElementById("q");
+    const cat = document.getElementById("cat");
+    const brand = document.getElementById("brand");
+    const inStock = document.getElementById("inStock");
+    const reset = document.getElementById("reset");
+    const items = Array.from(document.querySelectorAll(".product"));
+    const empty = document.getElementById("empty");
+    const count = document.getElementById("count");
+
+    function apply() {
+      const qq = (q?.value || "").toLowerCase().trim();
+      const c = cat?.value || "";
+      const b = brand?.value || "";
+      const stockOnly = !!inStock?.checked;
+
+      let shown = 0;
+      for (const el of items) {
+        const name = el.dataset.name || "";
+        const ec = el.dataset.cat || "";
+        const eb = el.dataset.brand || "";
+        const s = Number(el.dataset.stock || "0");
+
+        const ok =
+          (!qq || name.includes(qq)) &&
+          (!c || ec === c) &&
+          (!b || eb === b) &&
+          (!stockOnly || s > 0);
+
+        el.classList.toggle("hidden", !ok);
+        if (ok) shown++;
+      }
+      if (count) count.textContent = `${shown} producto(s)`;
+      if (empty) empty.classList.toggle("hidden", shown !== 0);
+    }
+
+    q?.addEventListener("input", apply);
+    cat?.addEventListener("change", apply);
+    brand?.addEventListener("change", apply);
+    inStock?.addEventListener("change", apply);
+
+    reset?.addEventListener("click", () => {
+      if (q) q.value = "";
+      if (cat) cat.value = "";
+      if (brand) brand.value = "";
+      if (inStock) inStock.checked = false;
+      apply();
+    });
+
+    apply();
+  </script>
+</BaseLayout>

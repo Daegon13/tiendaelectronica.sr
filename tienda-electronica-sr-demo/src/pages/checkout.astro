@@ -1,0 +1,246 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+const base = import.meta.env.BASE_URL;
+const href = (p: string) => `${base}${p.replace(/^\//, "")}`;
+---
+<BaseLayout title="Checkout | Tienda Electrónica SR">
+  <h1 class="text-xl font-semibold">Checkout</h1>
+  <p class="mt-2 text-sm text-slate-600">
+    Pago online en demo: flujo simulado. La integración real se activa en implementación final.
+  </p>
+
+  <div class="mt-6 grid gap-6 md:grid-cols-3">
+    <form id="form" class="space-y-5 md:col-span-2">
+      <div class="rounded-lg border border-slate-200 p-4">
+        <div class="font-semibold">Datos de contacto</div>
+        <div class="mt-3 grid gap-3 sm:grid-cols-2">
+          <label class="text-sm">
+            Nombre y apellido
+            <input name="fullName" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2" required />
+          </label>
+          <label class="text-sm">
+            Teléfono
+            <input name="phone" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2" required />
+          </label>
+        </div>
+        <label class="mt-3 block text-sm">
+          Email
+          <input name="email" type="email" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2" required />
+        </label>
+      </div>
+
+      <div class="rounded-lg border border-slate-200 p-4">
+        <div class="font-semibold">Entrega</div>
+        <div class="mt-3 flex gap-4 text-sm">
+          <label class="flex items-center gap-2">
+            <input type="radio" name="fulfillment" value="shipping" checked />
+            Envío
+          </label>
+          <label class="flex items-center gap-2">
+            <input type="radio" name="fulfillment" value="pickup" />
+            Retiro en local
+          </label>
+        </div>
+
+        <div id="shippingFields" class="mt-4 grid gap-3 sm:grid-cols-2">
+          <label class="text-sm">
+            Calle
+            <input name="street" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2" />
+          </label>
+          <label class="text-sm">
+            Número
+            <input name="number" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2" />
+          </label>
+          <label class="text-sm">
+            Ciudad
+            <input name="city" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2" />
+          </label>
+          <label class="text-sm">
+            Barrio (opcional)
+            <input name="neighborhood" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2" />
+          </label>
+          <label class="text-sm sm:col-span-2">
+            Notas (opcional)
+            <input name="notes" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2" />
+          </label>
+          <div class="text-xs text-slate-500 sm:col-span-2">
+            Regla demo: envío estándar fijo.
+          </div>
+        </div>
+
+        <div id="pickupInfo" class="mt-4 hidden rounded-md bg-slate-50 p-4 text-sm text-slate-700">
+          Retiro en local (demo): Dirección y horarios se configuran en la versión final.
+        </div>
+      </div>
+
+      <div class="rounded-lg border border-slate-200 p-4">
+        <div class="font-semibold">Pago</div>
+        <div class="mt-2 text-sm text-slate-600">Método: Tarjeta (simulado)</div>
+        <button class="mt-4 w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800" type="submit">
+          Pagar y confirmar
+        </button>
+        <div id="err" class="mt-3 text-sm text-red-600"></div>
+      </div>
+    </form>
+
+    <aside class="rounded-lg border border-slate-200 p-4">
+      <div class="font-semibold">Resumen</div>
+      <div id="summary" class="mt-3 space-y-2 text-sm"></div>
+      <div class="mt-4 border-t border-slate-200 pt-4 text-sm">
+        <div class="flex justify-between"><span class="text-slate-600">Subtotal</span><span id="sumSubtotal" class="font-semibold"></span></div>
+        <div class="mt-1 flex justify-between"><span class="text-slate-600">Envío</span><span id="sumShipping" class="font-semibold"></span></div>
+        <div class="mt-2 flex justify-between text-base"><span class="font-semibold">Total</span><span id="sumTotal" class="font-semibold"></span></div>
+      </div>
+    </aside>
+  </div>
+
+  <script type="module">
+    import { getCart, clearCart } from "../lib/cart";
+    import { PRODUCTS } from "../data/products";
+    import { formatMoney } from "../lib/format";
+    import { generateOrderNumber, saveLastOrder } from "../lib/order";
+
+    const form = document.getElementById("form");
+    const err = document.getElementById("err");
+    const shippingFields = document.getElementById("shippingFields");
+    const pickupInfo = document.getElementById("pickupInfo");
+
+    const summary = document.getElementById("summary");
+    const sumSubtotal = document.getElementById("sumSubtotal");
+    const sumShipping = document.getElementById("sumShipping");
+    const sumTotal = document.getElementById("sumTotal");
+
+    const BASE = import.meta.env.BASE_URL || "/";
+
+    function getFulfillment() {
+      const v = new FormData(form).get("fulfillment");
+      return v === "pickup" ? "pickup" : "shipping";
+    }
+
+    function shippingCostFor(method) {
+      // Regla demo: costo fijo de envío
+      return method === "shipping" ? 250 : 0;
+    }
+
+    function getLines() {
+      const cart = getCart();
+      const map = new Map(PRODUCTS.map(p => [p.id, p]));
+      const lines = [];
+      for (const item of cart.items) {
+        const p = map.get(item.productId);
+        if (!p) continue;
+        const qty = Math.min(item.qty, p.stockQty);
+        if (qty <= 0) continue;
+        lines.push({ p, qty, lineTotal: p.price * qty });
+      }
+      return lines;
+    }
+
+    function paint() {
+      const lines = getLines();
+      summary.innerHTML = "";
+      let subtotal = 0;
+      for (const l of lines) {
+        subtotal += l.lineTotal;
+        const row = document.createElement("div");
+        row.className = "flex justify-between gap-3";
+        row.innerHTML = `<span class="text-slate-700">${l.qty} × ${l.p.name}</span><span class="font-semibold">${formatMoney(l.lineTotal, l.p.currency)}</span>`;
+        summary.appendChild(row);
+      }
+
+      const method = getFulfillment();
+      const shipping = shippingCostFor(method);
+      const total = subtotal + shipping;
+
+      sumSubtotal.textContent = formatMoney(subtotal, "UYU");
+      sumShipping.textContent = formatMoney(shipping, "UYU");
+      sumTotal.textContent = formatMoney(total, "UYU");
+    }
+
+    function toggleFulfillmentUI() {
+      const method = getFulfillment();
+      if (method === "pickup") {
+        shippingFields.classList.add("hidden");
+        pickupInfo.classList.remove("hidden");
+      } else {
+        shippingFields.classList.remove("hidden");
+        pickupInfo.classList.add("hidden");
+      }
+      paint();
+    }
+
+    document.querySelectorAll('input[name="fulfillment"]').forEach(r => r.addEventListener("change", toggleFulfillmentUI));
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      err.textContent = "";
+
+      const lines = getLines();
+      if (!lines.length) {
+        err.textContent = "El carrito está vacío o los productos quedaron sin stock.";
+        return;
+      }
+
+      const fd = new FormData(form);
+      const method = getFulfillment();
+
+      if (method === "shipping") {
+        const street = String(fd.get("street") || "").trim();
+        const number = String(fd.get("number") || "").trim();
+        const city = String(fd.get("city") || "").trim();
+        if (!street || !number || !city) {
+          err.textContent = "Para envío, completá Calle, Número y Ciudad.";
+          return;
+        }
+      }
+
+      const subtotal = lines.reduce((a, l) => a + l.lineTotal, 0);
+      const shipping = shippingCostFor(method);
+      const total = subtotal + shipping;
+
+      const orderNumber = generateOrderNumber();
+      const order = {
+        orderNumber,
+        createdAt: new Date().toISOString(),
+        customer: {
+          fullName: String(fd.get("fullName") || "").trim(),
+          email: String(fd.get("email") || "").trim(),
+          phone: String(fd.get("phone") || "").trim()
+        },
+        fulfillment: {
+          method,
+          shippingCost: shipping,
+          ...(method === "shipping"
+            ? {
+                address: {
+                  street: String(fd.get("street") || "").trim(),
+                  number: String(fd.get("number") || "").trim(),
+                  city: String(fd.get("city") || "").trim(),
+                  neighborhood: String(fd.get("neighborhood") || "").trim(),
+                  notes: String(fd.get("notes") || "").trim()
+                }
+              }
+            : {})
+        },
+        items: lines.map(l => ({
+          productId: l.p.id,
+          name: l.p.name,
+          unitPrice: l.p.price,
+          qty: l.qty,
+          currency: l.p.currency
+        })),
+        totals: { subtotal, shipping, total, currency: "UYU" },
+        payment: { method: "card", status: "approved" }
+      };
+
+      saveLastOrder(order);
+      clearCart();
+
+      const url = `${BASE}checkout/confirmacion?order=${encodeURIComponent(orderNumber)}`;
+      window.location.href = url;
+    });
+
+    toggleFulfillmentUI();
+    paint();
+  </script>
+</BaseLayout>
