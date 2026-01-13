@@ -2,12 +2,10 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { getAllProducts, getProductBySlug } from "../../lib/products";
 import { formatMoney } from "../../lib/format";
-import { PRODUCTS } from "../../data/products";
-import { addItem } from "../../lib/cart";
 
 export async function getStaticPaths() {
   const products = getAllProducts();
-  return products.map(p => ({ params: { slug: p.slug } }));
+  return products.map((p) => ({ params: { slug: p.slug } }));
 }
 
 const { slug } = Astro.params;
@@ -19,28 +17,52 @@ const href = (p: string) => `${base}${p.replace(/^\//, "")}`;
 if (!product) {
   throw new Error("Producto no encontrado");
 }
+
+const outOfStock = product.stockQty <= 0;
+const stockBadgeClass = outOfStock
+  ? "bg-slate-100 text-slate-600"
+  : "bg-emerald-50 text-emerald-700";
+const addBtnClass = outOfStock
+  ? "bg-slate-200 text-slate-500 cursor-not-allowed"
+  : "bg-slate-900 text-white hover:bg-slate-800";
 ---
+
 <BaseLayout title={`${product.name} | Tienda Electrónica SR`}>
   <div class="grid gap-8 md:grid-cols-2">
     <div>
-      <img class="w-full rounded-xl border border-slate-200 object-cover" src={product.images[0]} alt={product.name} />
+      <img
+        class="w-full rounded-xl border border-slate-200 object-cover"
+        src={product.images[0]}
+        alt={product.name}
+        loading="eager"
+      />
       <div class="mt-3 grid grid-cols-3 gap-3">
-        {product.images.slice(0, 3).map(img => (
-          <img class="h-24 w-full rounded-lg border border-slate-200 object-cover" src={img} alt="" loading="lazy" />
+        {product.images.slice(0, 3).map((img) => (
+          <img
+            class="h-24 w-full rounded-lg border border-slate-200 object-cover"
+            src={img}
+            alt=""
+            loading="lazy"
+          />
         ))}
       </div>
     </div>
 
     <div>
-      <a class="text-sm underline text-slate-600" href={href("/catalogo")}>Volver al catálogo</a>
+      <a class="text-sm underline text-slate-600" href={href("/catalogo")}>
+        Volver al catálogo
+      </a>
+
       <h1 class="mt-2 text-2xl font-semibold">{product.name}</h1>
       <div class="mt-1 text-slate-600">{product.brand} · {product.category}</div>
 
-      <div class="mt-4 text-2xl font-semibold">{formatMoney(product.price, product.currency)}</div>
+      <div class="mt-4 text-2xl font-semibold">
+        {formatMoney(product.price, product.currency)}
+      </div>
 
       <div class="mt-3">
-        <span class={`text-xs px-2 py-1 rounded-full ${product.stockQty <= 0 ? "bg-slate-100 text-slate-600" : "bg-emerald-50 text-emerald-700"}`}>
-          {product.stockQty <= 0 ? "Sin stock" : `Stock: ${product.stockQty}`}
+        <span class={`text-xs px-2 py-1 rounded-full ${stockBadgeClass}`}>
+          {outOfStock ? "Sin stock" : `Stock: ${product.stockQty}`}
         </span>
       </div>
 
@@ -49,13 +71,19 @@ if (!product) {
       <div class="mt-5 flex items-center gap-3">
         <label class="text-sm">
           Cantidad
-          <input id="qty" type="number" min="1" value="1" class="mt-1 w-24 rounded-md border border-slate-200 px-3 py-2" />
+          <input
+            id="qty"
+            type="number"
+            min="1"
+            value="1"
+            class="mt-1 w-24 rounded-md border border-slate-200 px-3 py-2"
+          />
         </label>
 
         <button
           id="add"
-          class={`mt-6 rounded-md px-4 py-2 text-sm font-medium ${product.stockQty <= 0 ? "bg-slate-200 text-slate-500 cursor-not-allowed" : "bg-slate-900 text-white hover:bg-slate-800"}`}
-          disabled={product.stockQty <= 0}
+          class={`mt-6 rounded-md px-4 py-2 text-sm font-medium ${addBtnClass}`}
+          disabled={outOfStock}
           data-product-id={product.id}
           data-stock={product.stockQty}
         >
@@ -81,37 +109,38 @@ if (!product) {
         </div>
 
         <div class="mt-4 text-sm text-slate-600">
-          Garantía y devoluciones: <a class="underline" href={href("/legal/devoluciones")}>ver políticas</a>.
+          Garantía y devoluciones:{" "}
+          <a class="underline" href={href("/legal/devoluciones")}>ver políticas</a>.
         </div>
       </div>
     </div>
   </div>
 
-<script type="module">
-  import { addItem } from "../../lib/cart";
+  <script type="module">
+    import { addItem } from "../../lib/cart";
 
-  const btn = document.getElementById("add");
-  const qtyEl = document.getElementById("qty");
-  const msg = document.getElementById("msg");
+    const btn = document.getElementById("add");
+    const qtyEl = document.getElementById("qty");
+    const msg = document.getElementById("msg");
 
-  const productId = btn?.dataset.productId;
-  const stock = Number(btn?.dataset.stock || "0");
+    const productId = btn?.dataset.productId;
+    const stock = Number(btn?.dataset.stock || "0");
 
-  function show(text) {
-    if (msg) msg.textContent = text;
-  }
-
-  btn?.addEventListener("click", () => {
-    if (!productId) return;
-
-    const qty = Math.max(1, Number(qtyEl?.value || 1));
-
-    if (qty > stock) {
-      show(`No se puede agregar esa cantidad. Stock disponible: ${stock}.`);
-      return;
+    function show(text) {
+      if (msg) msg.textContent = text;
     }
 
-    addItem(productId, qty);
-    show("Producto agregado al carrito.");
-  });
-</script>
+    btn?.addEventListener("click", () => {
+      if (!productId) return;
+      const qty = Math.max(1, Number(qtyEl?.value || 1));
+
+      if (qty > stock) {
+        show("No se puede agregar esa cantidad. Stock disponible: " + stock + ".");
+        return;
+      }
+
+      addItem(productId, qty);
+      show("Producto agregado al carrito.");
+    });
+  </script>
+</BaseLayout>
