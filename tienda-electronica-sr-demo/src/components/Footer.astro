@@ -1,4 +1,5 @@
 ---
+import { SITE, LINKS } from "../data/site";
 const { href } = Astro.props as { href: (p: string) => string };
 ---
 <footer class="border-t border-slate-200">
@@ -19,9 +20,14 @@ const { href } = Astro.props as { href: (p: string) => string };
     <div class="text-sm">
       <div class="font-semibold">Contacto</div>
       <div class="mt-2 text-slate-600">WhatsApp y correo (placeholder).</div>
-      <div class="mt-2 flex gap-3">
-        <a class="underline" href={href("/contacto")}>Ver contacto</a>
-      </div>
+      <div class="text-sm">
+  <div class="font-semibold">Contacto</div>
+  <div class="mt-2 text-slate-600">
+    <div>WhatsApp: <a class="underline" href={LINKS.whatsapp} target="_blank" rel="noreferrer">{SITE.phoneDisplay}</a></div>
+    <div class="mt-1">Tel: <a class="underline" href={LINKS.tel}>{SITE.phoneDisplay}</a></div>
+    <div class="mt-1">Instagram: <a class="underline" href={SITE.instagramUrl} target="_blank" rel="noreferrer">@tiendaelectronica.sr</a></div>
+  </div>
+</div>
     </div>
   </div>
 </footer>
