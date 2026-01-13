@@ -1,9 +1,20 @@
 ---
+import { SITE, LINKS } from "../data/site";
 const { href } = Astro.props as { href: (p: string) => string };
 ---
 <header class="border-b border-slate-200">
   <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-    <a class="font-semibold tracking-tight" href={href("/")}>Tienda Electrónica SR</a>
+    <a class="flex items-center gap-3 font-semibold tracking-tight" href={href("/")}>
+  <img
+    src={href("/brand/logo.png")}
+    alt={`${SITE.brand} logo`}
+    class="h-9 w-9 rounded-full border border-slate-200 object-contain bg-white"
+    loading="eager"
+  />
+  <span>{SITE.brand}</span>
+  <span class="hidden text-xs font-normal text-slate-500 md:inline">{SITE.locationLabel}</span>
+    </a>
+
 
     <nav class="hidden gap-5 text-sm md:flex">
       <a class="hover:underline" href={href("/catalogo")}>Catálogo</a>
@@ -11,6 +22,15 @@ const { href } = Astro.props as { href: (p: string) => string };
       <a class="hover:underline" href={href("/envios-retiros")}>Envíos / Retiros</a>
       <a class="hover:underline" href={href("/contacto")}>Contacto</a>
     </nav>
+
+    <a
+    class="hidden rounded-md border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50 md:inline"
+    href={LINKS.whatsapp}
+    target="_blank"
+    rel="noreferrer"
+  >
+    WhatsApp
+  </a>
 
     <a class="relative rounded-md border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50" href={href("/carrito")}>
       Carrito
